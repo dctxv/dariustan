@@ -19,8 +19,8 @@
   --ink: #111;
   --ink-dim: rgba(17, 17, 17, .58);
   --ink-faint: rgba(17, 17, 17, .3);
-  /* The second ink: Urchi's iris, set per visit by urchi.js. Only the cursor ring and the
-     tracking label borrow it. */
+  /* The second ink: Urchi's iris, set per visit by urchi.js. Only the tracking label and the
+     footer swatch borrow it. */
   --spot: #fd0c0d;
   --mono: "DM Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
   --sans: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -238,40 +238,7 @@ a:focus-visible { outline: 1px solid var(--ink); outline-offset: 3px; }
 @keyframes draw-y { from { transform: scaleY(0); } }
 @keyframes fade { from { opacity: 0; } }
 
-/* ---------- custom cursor + tracking box (built in main.js) ---------- */
-
-html.has-cursor, html.has-cursor * { cursor: none !important; }
-
-.cur { position: fixed; inset: 0; z-index: 90; pointer-events: none; opacity: 0; }
-.cur.on { opacity: 1; }
-/* A reticle: four short ticks around the ring, 4px clear of it. The pair parallel to a
-   hairline turns full ink when the pointer locks onto it. */
-.cur-ticks { position: absolute; left: 0; top: 0; }
-.cur-ticks i { position: absolute; background: var(--ink-faint); }
-.cur-ticks i:nth-child(-n+2) { top: -.5px; width: 10px; height: 1px; }
-.cur-ticks i:nth-child(n+3) { left: -.5px; width: 1px; height: 10px; }
-.cur-ticks i:nth-child(1) { left: -20.5px; }
-.cur-ticks i:nth-child(2) { left: 10.5px; }
-.cur-ticks i:nth-child(3) { top: -20.5px; }
-.cur-ticks i:nth-child(4) { top: 10.5px; }
-.cur-ticks.lock-y i:nth-child(-n+2), .cur-ticks.lock-x i:nth-child(n+3) { background: var(--ink); }
-.cur-ring {
-  position: absolute;
-  left: -6.5px; top: -6.5px;
-  width: 13px; height: 13px;
-  border: 1px solid var(--spot);
-  border-radius: 50%;
-}
-.cur-lbl {
-  position: absolute;
-  left: 0; top: 0;
-  font: 400 8.5px/1 var(--mono);
-  letter-spacing: .12em;
-  white-space: nowrap;
-  color: var(--ink);
-  padding: 3px 4px 2px;
-  background: var(--paper);
-}
+/* ---------- tracking box (built in main.js) ---------- */
 
 .track {
   position: fixed;
@@ -298,15 +265,15 @@ html.has-cursor, html.has-cursor * { cursor: none !important; }
   background: var(--spot);
   color: var(--paper);
 }
-/* The spot colour lives in Urchi's eyes: while they are shut (urchi.js sets data-blink) the three
+/* The spot colour lives in Urchi's eyes: while they are shut (urchi.js sets data-blink) the two
    places that borrow it dim with them, quickly in and slower back out */
-.cur-ring, .track-lbl, .swatch::before { transition: opacity 160ms; }
-:root[data-blink] .cur-ring, :root[data-blink] .track-lbl, :root[data-blink] .swatch::before {
+.track-lbl, .swatch::before { transition: opacity 160ms; }
+:root[data-blink] .track-lbl, :root[data-blink] .swatch::before {
   opacity: .35;
   transition-duration: 80ms;
 }
 @media (prefers-reduced-motion: reduce) {
-  .cur-ring, .track-lbl, .swatch::before { transition: none; }
+  .track-lbl, .swatch::before { transition: none; }
 }
 @media (prefers-reduced-motion: no-preference) {
   .track { transition: transform 170ms cubic-bezier(.3, .7, .2, 1), width 170ms cubic-bezier(.3, .7, .2, 1), height 170ms cubic-bezier(.3, .7, .2, 1), opacity 120ms; }

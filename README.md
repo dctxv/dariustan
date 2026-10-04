@@ -6,7 +6,7 @@ Personal index for Darius Clay Tan Yi. One page, one fixed grid, no build step.
 
 - `index.html` - all content, mirrored around a centre column on one grid
 - `styles.css` - grid, hairlines, paper grain (generated SVG noise), responsive stacking
-- `main.js` - crosshair cursor and hover/focus tracking box
+- `main.js` - hover/focus tracking box, edition stamp, day or night print
 - `urchi.js` - draws Urchi's head into the centre cell
 - `assets/urchi-head.js` - Urchi's head, bundled from `urchi-head/`
 - `assets/fonts/` - Geist and DM Mono, self-hosted (both SIL Open Font License)

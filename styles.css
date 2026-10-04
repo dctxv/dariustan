@@ -156,11 +156,9 @@ a:focus-visible { outline: 1px solid var(--ink); outline-offset: 3px; }
   width: 138.587%;
   height: 141.136%;
   pointer-events: none;
-  /* Printed, not pasted: worn into ink by the #ink filter, then multiplied onto the paper */
-  filter: url(#ink);
+  /* Printed, not pasted: the halftone is multiplied onto the paper */
   mix-blend-mode: multiply;
 }
-.defs { position: absolute; width: 0; height: 0; overflow: hidden; }
 
 /* ---------- projects and skills: identical structure ---------- */
 

@@ -11,6 +11,7 @@
   <link rel="preload" href="assets/fonts/dm-mono-400.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="styles.css">
   <script src="main.js" defer></script>
+  <script src="urchi.js" type="module"></script>
 </head>
 <body>
   <main class="sheet">
@@ -43,11 +44,9 @@
       </ul>
     </nav>
 
-    <!-- To swap in Urchi, replace assets/mark.svg -->
+    <!-- Urchi is drawn into the frame by urchi.js -->
     <figure class="cell fig">
-      <div class="frame">
-        <div class="mark" role="img" aria-label="Placeholder mark, Urchi goes here"></div>
-      </div>
+      <div class="frame"></div>
     </figure>
 
     <section class="cell list projects" aria-labelledby="projects-h">

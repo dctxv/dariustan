@@ -27,9 +27,6 @@
   /* Paper texture, all generated SVG noise. No image files. */
   --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1.5 0 0 0 -.6'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
   --tooth: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='360'%3E%3Cfilter id='t'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.045' numOctaves='4' stitchTiles='stitch'/%3E%3CfeDiffuseLighting lighting-color='%23fff' surfaceScale='2.4'%3E%3CfeDistantLight azimuth='225' elevation='58'/%3E%3C/feDiffuseLighting%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23t)'/%3E%3C/svg%3E");
-  /* Light specks and blotches for the silhouette, so the grain shows through the ink */
-  --speck: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .95 0 0 0 0 .94 0 0 0 0 .91 3.2 0 0 0 -1.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23s)'/%3E%3C/svg%3E");
-  --blot: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420'%3E%3Cfilter id='b'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.028' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .95 0 0 0 0 .94 0 0 0 0 .91 1.25 0 0 0 -.72'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23b)'/%3E%3C/svg%3E");
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -148,15 +145,9 @@ a:focus-visible { outline: 1px solid var(--ink); outline-offset: 3px; }
 
 /* ---------- mark ---------- */
 
-.frame { aspect-ratio: 7 / 6; padding: 12px 2px 0; }
-.mark {
-  width: 100%;
-  height: 100%;
-  background-color: var(--ink);
-  background-image: var(--speck), var(--blot);
-  -webkit-mask: url("assets/mark.svg") center bottom / contain no-repeat;
-  mask: url("assets/mark.svg") center bottom / contain no-repeat;
-}
+/* Same proportions as Urchi's canvas, which leaves room for the head to tilt */
+.frame { aspect-ratio: 1402.5 / 1230; }
+.urchi { display: block; width: 100%; height: 100%; object-fit: contain; }
 
 /* ---------- projects and skills: identical structure ---------- */
 
@@ -255,15 +246,15 @@ html.has-cursor, html.has-cursor * { cursor: none !important; }
   .cell { border-bottom: 1px solid var(--ink); }
   .top-l { padding-top: 48px; justify-items: start; text-align: left; }
   .top-r { padding-top: 18px; }
-  /* The centre column survives as a framed strip around the mark */
+  /* The centre column survives as a framed strip around Urchi */
   .frame {
     width: 56%;
     max-width: 360px;
     margin: 0 auto;
-    padding: 28px 4px 0;
+    padding-top: 16px;
     border: solid var(--ink);
     border-width: 0 1px;
-    aspect-ratio: 7 / 6.5;
+    aspect-ratio: 1402.5 / 1300;
   }
   .list { width: auto; justify-self: stretch; padding-top: 24px; padding-bottom: 28px; }
   .foot { border-bottom: 0; padding: 28px var(--pad) 36px; }

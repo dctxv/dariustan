@@ -1,4 +1,4 @@
-// Clay Tan / Index. Two small behaviours: tracking box and crosshair cursor.
+// Clay Tan / Index. Two small behaviours: tracking box and reticle cursor.
 (() => {
   const root = document.documentElement;
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -53,7 +53,7 @@
   addEventListener("scroll", placeBox, { passive: true });
   addEventListener("resize", placeBox);
 
-  /* ---------- crosshair cursor: mouse only, off for reduced motion ---------- */
+  /* ---------- reticle cursor: mouse only, off for reduced motion ---------- */
 
   if (!finePointer || reduce) return;
 
@@ -61,9 +61,9 @@
   const cur = document.createElement("div");
   cur.className = "cur";
   cur.setAttribute("aria-hidden", "true");
-  cur.innerHTML = '<div class="cur-h"></div><div class="cur-v"></div><div class="cur-ring"></div><div class="cur-lbl"></div>';
+  cur.innerHTML = '<div class="cur-ticks"><i></i><i></i><i></i><i></i></div><div class="cur-ring"></div><div class="cur-lbl"></div>';
   document.body.append(cur);
-  const [h, v, ring, lbl] = cur.children;
+  const [ticks, ring, lbl] = cur.children;
 
   const SNAP = 10;
   let segs = { h: [], v: [] };
@@ -100,17 +100,21 @@
     const px = mx + scrollX, py = my + scrollY;
     const lx = nearest(segs.v, px, py);
     const ly = nearest(segs.h, py, px);
-    const x = lx === null ? mx : lx - scrollX;
-    const y = ly === null ? my : ly - scrollY;
-    h.style.transform = `translateY(${y}px)`;
-    v.style.transform = `translateX(${x}px)`;
-    h.classList.toggle("lock", ly !== null);
-    v.classList.toggle("lock", lx !== null);
-    // The ring stays on the real pointer so clicks land where they look
-    ring.style.transform = lbl.style.transform = `translate(${mx}px, ${my}px)`;
+    // The reticle stays on the real pointer so clicks land where they look; on a lock only
+    // the ring steps onto the line, at most SNAP px, and that axis's ticks go full ink
+    ticks.style.transform = `translate(${mx}px, ${my}px)`;
+    ring.style.transform = `translate(${lx === null ? mx : lx - scrollX}px, ${ly === null ? my : ly - scrollY}px)`;
+    ticks.classList.toggle("lock-x", lx !== null);
+    ticks.classList.toggle("lock-y", ly !== null);
     lbl.textContent = lx !== null || ly !== null
       ? `LOCK ${lx !== null ? "X" : ""}${ly !== null ? "Y" : ""} ${pad(px)} / ${pad(py)}`
       : `X ${pad(px)} / Y ${pad(py)}`;
+    // Label sits below right of the ring, and flips to the other side near the right or
+    // bottom edge so it never runs off the page or over the row below
+    const w = lbl.offsetWidth, hgt = lbl.offsetHeight;
+    const left = mx + 24 + w > innerWidth ? mx - 24 - w : mx + 24;
+    const top = my + 24 + hgt > innerHeight - 24 ? my - 24 - hgt : my + 24;
+    lbl.style.transform = `translate(${left}px, ${top}px)`;
   }
 
   addEventListener("pointermove", (e) => {

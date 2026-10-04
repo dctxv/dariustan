@@ -10,6 +10,7 @@ const FADE = 0.36;       // how much lighter the top is than the bottom
 const SPOT_TONE = 0.06;  // how much lighter the spot ink prints than the black
 const SHUT = 0.15;       // under this share of the most iris seen, the eyes count as shut
 const DRIFT = 1.5;       // how far the spot plate slips off register toward the pointer, in px
+const BUDGET = 6;        // ms: a touch device printing slower than this (median of 60) prints coarser
 
 // The iris is the page's one spot colour. It only prints if it reads as colour on the paper:
 // at least this much chroma, and at least this far in lightness from the paper (OKLab), picked
@@ -81,6 +82,7 @@ function screen(w, h, px) {
 }
 
 const root = document.documentElement;
+const params = new URLSearchParams(location.search);
 const head = document.querySelector(".head");
 
 // Squared distance between two colours, 0..1
@@ -120,7 +122,7 @@ if (head) {
     return d[p + 3] / 255 - lum > 0.5 ? 1 : 0;
   }
   const src = urchi.canvas;
-  const ratio = Math.min(devicePixelRatio, 2);
+  let ratio = Math.min(devicePixelRatio, 2);
 
   // Two plates, like a two-ink print: black, and the spot over it, from the same mask and screen
   const out = document.createElement("canvas");
@@ -195,12 +197,35 @@ if (head) {
   });
 
   // Keep the head painted at the size it is shown
-  new ResizeObserver(([entry]) => {
-    const w = entry.contentRect.width;
-    if (!w) return;
-    urchi.setResolution(Math.round(w * (URCHI_BOX.w / HEAD_W) * ratio));
+  let shown = 0;
+  function size() {
+    if (!shown) return;
+    urchi.setResolution(Math.round(shown * (URCHI_BOX.w / HEAD_W) * ratio));
+    field = null;   // the screen is laid out in device pixels, so it follows the ratio
     dirty = true;
+  }
+  new ResizeObserver(([entry]) => {
+    shown = entry.contentRect.width;
+    size();
   }).observe(head);
+
+  // Time the first 60 prints. On a touch device whose median runs over budget, drop to a
+  // coarser canvas (1.5x) and lay the screen out again. ?perf prints the median.
+  const timings = [];
+  function timed() {
+    const t0 = performance.now();
+    compose();
+    if (timings.length >= 60) return;
+    timings.push(performance.now() - t0);
+    if (timings.length < 60) return;
+    const median = timings.slice().sort((a, b) => a - b)[30];
+    const capped = matchMedia("(pointer: coarse)").matches && median > BUDGET && ratio > 1.5;
+    if (params.has("perf")) console.log(`urchi: compose median ${median.toFixed(2)}ms at ${ratio}x${capped ? ", capping at 1.5x" : ""}`);
+    if (capped) {
+      ratio = 1.5;
+      size();
+    }
+  }
 
   function compose() {
     const w = src.width, h = src.height;
@@ -398,7 +423,7 @@ if (head) {
   // Animate only while the cell is on screen
   let raf = 0, last = 0;
   const tick = (now) => {
-    if (urchi.update(Math.min((now - last) / 1000, 0.1)) || dirty) compose();
+    if (urchi.update(Math.min((now - last) / 1000, 0.1)) || dirty) timed();
     last = now;
     raf = requestAnimationFrame(tick);
   };

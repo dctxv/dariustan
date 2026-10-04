@@ -8,6 +8,7 @@ const SCREEN = 4.8;      // dot spacing in CSS pixels
 const TONE = 0.6;        // how much ink the dots lay down, 0..1 (around 0.79 the dots start to join)
 const FADE = 0.36;       // how much lighter the top is than the bottom
 const SPOT_TONE = 0.06;  // how much lighter the spot ink prints than the black
+const SHUT = 0.15;       // under this share of the most iris seen, the eyes count as shut
 
 // The iris is the page's one spot colour. It only prints if it reads as colour on the paper:
 // at least this much chroma, and at least this far in lightness from the paper (OKLab), picked
@@ -113,6 +114,7 @@ if (head) {
   const ctx = out.getContext("2d", { willReadFrequently: true });
   let field = null, mask = null;
   let dirty = true;
+  let irisMost = 0, shut = false;
 
   // Night falls (or the sun comes up) while the page is open: reprint in the new ink
   document.addEventListener("printchange", () => {
@@ -135,6 +137,7 @@ if (head) {
       out.height = h;
       field = screen(w, h, ratio);
       mask = new Uint8Array(w * h);
+      irisMost = 0;
     }
     ctx.globalCompositeOperation = "copy";
     ctx.drawImage(src, 0, 0);
@@ -144,6 +147,7 @@ if (head) {
     // Three inks: 0 paper, 1 black, 2 spot. The iris (coloured, not near black or white)
     // is spot; the pupils stay black whatever colour they are drawn; otherwise dark and
     // opaque is black and light parts (the rim) are paper.
+    let irisNow = 0;
     for (let i = 0, p = 0; i < mask.length; i++, p += 4) {
       const lum = (0.299 * d[p] + 0.587 * d[p + 1] + 0.114 * d[p + 2]) / 255;
       let ink = d[p + 3] / 255 - lum > 0.5 ? 1 : 0;
@@ -151,10 +155,19 @@ if (head) {
         const toIris = dist(d, p, iris);
         const toPupil = Math.min(dist(d, p, pupils[0]), dist(d, p, pupils[1]));
         const chroma = (Math.max(d[p], d[p + 1], d[p + 2]) - Math.min(d[p], d[p + 1], d[p + 2])) / 255;
-        if (toIris < NEAR && toIris < toPupil && chroma > 0.15 && lum > 0.08 && lum < 0.94) ink = 2;
+        if (toIris < NEAR && toIris < toPupil && chroma > 0.15 && lum > 0.08 && lum < 0.94) { ink = 2; irisNow++; }
         else if (toPupil < NEAR && toPupil <= toIris) ink = 1;
       }
       mask[i] = ink;
+    }
+
+    // The colour lives in the eyes: when the iris all but vanishes they are shut, and the page's
+    // accent dims with them. Only touch the page when that changes.
+    irisMost = Math.max(irisMost, irisNow);
+    if ((irisNow < irisMost * SHUT) !== shut) {
+      shut = !shut;
+      if (shut) root.dataset.blink = "";
+      else delete root.dataset.blink;
     }
 
     // Dots on one screen for both inks, so they register; the shape is only the edge of the dots

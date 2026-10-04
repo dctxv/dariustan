@@ -281,6 +281,16 @@ html.has-cursor, html.has-cursor * { cursor: none !important; }
   background: var(--spot);
   color: var(--paper);
 }
+/* The spot colour lives in Urchi's eyes: while they are shut (urchi.js sets data-blink) the three
+   places that borrow it dim with them, quickly in and slower back out */
+.cur-ring, .track-lbl, .swatch::before { transition: opacity 160ms; }
+:root[data-blink] .cur-ring, :root[data-blink] .track-lbl, :root[data-blink] .swatch::before {
+  opacity: .35;
+  transition-duration: 80ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cur-ring, .track-lbl, .swatch::before { transition: none; }
+}
 @media (prefers-reduced-motion: no-preference) {
   .track { transition: transform 170ms cubic-bezier(.3, .7, .2, 1), width 170ms cubic-bezier(.3, .7, .2, 1), height 170ms cubic-bezier(.3, .7, .2, 1), opacity 120ms; }
   .track.jump { transition: opacity 120ms; }

@@ -192,7 +192,7 @@ const COLOURWAYS: Colourway[] = [
 /** Drawn (or forced) once per page load and shared by every Urchi on the site's pages from then on. */
 let drawn: Colourway | null = null;
 function colourwayFor(params: URLSearchParams, pinned?: string): Colourway {
-  const forced = COLOURWAYS.find((c) => c[0] === (params.get("col") || pinned));
+  const forced = COLOURWAYS.find((c) => c[0] === (pinned || params.get("col")));
   if (forced) return (drawn = forced);
   if (drawn) return drawn;
   let r = Math.random() * COLOURWAYS.reduce((s, c) => s + c[1], 0);
@@ -211,7 +211,7 @@ export function drawnColourway(): { name: string; iris: string; pupilLeft: strin
 
 export type UrchiOptions = {
   reducedMotion?: boolean;
-  /** Always use this colourway (by name, e.g. "og") instead of a random one. ?col= still wins. */
+  /** Always use this colourway (by name, e.g. "og") instead of a random one, even over ?col=. */
   colourway?: string;
   /**
    * Mesh units per canvas pixel: 7.5 (the default) paints the 187 x 164 head of the standalone page.

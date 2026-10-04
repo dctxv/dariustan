@@ -1,13 +1,39 @@
-// Draws Urchi's head into the centre cell as a flat halftone print: one dot screen at 45°,
-// with no outline, and paper wherever Urchi is light (the eye whites, the rim).
-// assets/urchi-head.js is built from urchi-head/ (see README).
-import { createUrchi, URCHI_BOX } from "./assets/urchi-head.js";
+// Draws Urchi's head into the centre cell as a flat two-ink halftone print: black for the head
+// and pupils, a spot colour for the iris, both on one dot screen at 45°, with no outline, and
+// paper wherever Urchi is light (the rim). assets/urchi-head.js is built from urchi-head/ (see README).
+import { createUrchi, drawnColourway, URCHI_BOX } from "./assets/urchi-head.js";
 
 const HEAD_W = 1012;     // the head's own width in mesh units, what .head is sized to
 const INK = [17, 17, 17];
 const SCREEN = 4.8;      // dot spacing in CSS pixels
 const TONE = 0.6;        // how much ink the dots lay down, 0..1 (around 0.79 the dots start to join)
 const FADE = 0.36;       // how much lighter the top is than the bottom
+const SPOT_TONE = 0.06;  // how much lighter the spot ink prints than the black
+
+// The iris is the page's one spot colour. It only prints if it reads as colour on the paper:
+// at least this much chroma and no lighter than this (OKLab), picked by eye from all 100 irises.
+// Anything greyer or paler (umbrella, pebble, lilypad...) falls back to one of these.
+const MIN_CHROMA = 0.09;
+const MAX_LIGHT = 0.8;
+const STRONG = ["siren", "lobster", "jukebox", "pool", "valentine"];
+
+const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+
+function oklab([r, g, b]) {
+  const lin = (c) => ((c /= 255) <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+  const [R, G, B] = [lin(r), lin(g), lin(b)];
+  const l = Math.cbrt(0.4122214708 * R + 0.5363325363 * G + 0.0514459929 * B);
+  const m = Math.cbrt(0.2119034982 * R + 0.6806995451 * G + 0.1073969566 * B);
+  const s = Math.cbrt(0.0883024619 * R + 0.2817188376 * G + 0.6299787005 * B);
+  const a = 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s;
+  const bb = 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s;
+  return { L: 0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s, C: Math.hypot(a, bb) };
+}
+
+function printable(hex) {
+  const { L, C } = oklab(rgb(hex));
+  return C >= MIN_CHROMA && L <= MAX_LIGHT;
+}
 
 // Smooth value noise on a grid `step` pixels apart, for a little print unevenness.
 function valueNoise(w, h, step) {
@@ -47,10 +73,25 @@ function screen(w, h, px) {
   return { dot, tone };
 }
 
+const root = document.documentElement;
 const head = document.querySelector(".head");
 
+// Squared distance between two colours, 0..1
+const dist = (d, p, c) => ((d[p] - c[0]) ** 2 + (d[p + 1] - c[1]) ** 2 + (d[p + 2] - c[2]) ** 2) / 195075;
+const NEAR = 0.06;       // within this (squared) of a known eye colour counts as that colour
+
 if (head) {
-  const urchi = createUrchi({ smooth: true, colourway: "og" });
+  // Let the eyes draw at random (?col= still forces one); redraw with a strong one if the
+  // iris would print too pale or too grey to see
+  let urchi = createUrchi({ smooth: true });
+  let eyes = drawnColourway();
+  if (!printable(eyes.iris)) {
+    urchi.dispose();
+    urchi = createUrchi({ smooth: true, colourway: STRONG[(Math.random() * STRONG.length) | 0] });
+    eyes = drawnColourway();
+  }
+  root.style.setProperty("--spot", eyes.iris);
+  const iris = rgb(eyes.iris), pupils = [rgb(eyes.pupilLeft), rgb(eyes.pupilRight)];
   const src = urchi.canvas;
   const ratio = Math.min(devicePixelRatio, 2);
 
@@ -84,17 +125,28 @@ if (head) {
     const img = ctx.getImageData(0, 0, w, h);
     const d = img.data;
 
-    // Where Urchi is ink: dark and opaque. Light parts (eye whites, rim) count as paper.
+    // Three inks: 0 paper, 1 black, 2 spot. The iris (coloured, not near black or white)
+    // is spot; the pupils stay black whatever colour they are drawn; otherwise dark and
+    // opaque is black and light parts (the rim) are paper.
     for (let i = 0, p = 0; i < mask.length; i++, p += 4) {
       const lum = (0.299 * d[p] + 0.587 * d[p + 1] + 0.114 * d[p + 2]) / 255;
-      mask[i] = d[p + 3] / 255 - lum > 0.5 ? 1 : 0;
+      let ink = d[p + 3] / 255 - lum > 0.5 ? 1 : 0;
+      if (d[p + 3] > 127) {
+        const toIris = dist(d, p, iris);
+        const toPupil = Math.min(dist(d, p, pupils[0]), dist(d, p, pupils[1]));
+        const chroma = (Math.max(d[p], d[p + 1], d[p + 2]) - Math.min(d[p], d[p + 1], d[p + 2])) / 255;
+        if (toIris < NEAR && toIris < toPupil && chroma > 0.15 && lum > 0.08 && lum < 0.94) ink = 2;
+        else if (toPupil < NEAR && toPupil <= toIris) ink = 1;
+      }
+      mask[i] = ink;
     }
 
-    // Dots wherever Urchi is ink; the shape is only the edge of the dot field
+    // Dots on one screen for both inks, so they register; the shape is only the edge of the dots
     const { dot, tone } = field;
     for (let i = 0, p = 0; i < mask.length; i++, p += 4) {
-      if (mask[i] && tone[i] > dot[i]) {
-        d[p] = INK[0]; d[p + 1] = INK[1]; d[p + 2] = INK[2]; d[p + 3] = 255;
+      const ink = mask[i] === 1 ? INK : mask[i] === 2 ? iris : null;
+      if (ink && tone[i] - (mask[i] === 2 ? SPOT_TONE : 0) > dot[i]) {
+        d[p] = ink[0]; d[p + 1] = ink[1]; d[p + 2] = ink[2]; d[p + 3] = 255;
       } else {
         d[p + 3] = 0;
       }

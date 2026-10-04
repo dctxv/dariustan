@@ -1,0 +1,15 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Urchi head demo</title>
+<style>
+  body { margin: 0; min-height: 100vh; background: #0b0b0d; color: #ccc; font: 14px system-ui, sans-serif; display: grid; place-items: center; gap: 12px; padding: 16px; box-sizing: border-box }
+  #moves { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; max-width: 640px }
+  button { background: #1b1b20; color: #ddd; border: 1px solid #333; border-radius: 6px; padding: 6px 10px; cursor: pointer }
+  button:hover { background: #26262d }
+  #eyes { opacity: .6 }
+</style>
+<div id="stage"></div>
+<div id="eyes"></div>
+<div id="moves"></div>
+<script src="demo.js"></script>  <!-- build first: see demo.ts -->

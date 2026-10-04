@@ -68,7 +68,7 @@ a:focus-visible { outline: 1px solid var(--ink); outline-offset: 3px; }
 .sheet {
   position: relative;
   display: grid;
-  grid-template-columns: 1fr .5fr 1fr;
+  grid-template-columns: 1fr .39fr 1fr;
   grid-template-rows: minmax(100px, 1fr) auto auto minmax(56px, .6fr);
   grid-template-areas:
     "top-l .    top-r"
@@ -143,11 +143,23 @@ a:focus-visible { outline: 1px solid var(--ink); outline-offset: 3px; }
 .top-r a, .open { background: linear-gradient(currentColor, currentColor) left bottom / 0 1px no-repeat; transition: background-size .2s; }
 .top-r a:hover, .open:hover { background-size: 100% 1px; }
 
-/* ---------- mark ---------- */
+/* ---------- Urchi ---------- */
 
-/* Same proportions as Urchi's canvas, which leaves room for the head to tilt */
-.frame { aspect-ratio: 1402.5 / 1230; }
-.urchi { display: block; width: 100%; height: 100%; object-fit: contain; }
+/* .head is the head's own bounds (1012 x 871.5 mesh units), sitting on the line below.
+   The canvas is larger so a tilt or a turn can reach past the box, onto the paper. */
+.frame { padding: 7% 6% 0; }
+.head { position: relative; aspect-ratio: 1012 / 871.5; }
+.urchi {
+  position: absolute;
+  z-index: 3;
+  left: -19.293%;
+  top: -27.309%;
+  width: 138.587%;
+  height: 141.136%;
+  pointer-events: none;
+  /* Printed, not pasted: the white rim takes the paper's colour and the ink sits in it */
+  mix-blend-mode: multiply;
+}
 
 /* ---------- projects and skills: identical structure ---------- */
 
@@ -251,10 +263,9 @@ html.has-cursor, html.has-cursor * { cursor: none !important; }
     width: 56%;
     max-width: 360px;
     margin: 0 auto;
-    padding-top: 16px;
+    padding: 14% 8% 0;
     border: solid var(--ink);
     border-width: 0 1px;
-    aspect-ratio: 1402.5 / 1300;
   }
   .list { width: auto; justify-self: stretch; padding-top: 24px; padding-bottom: 28px; }
   .foot { border-bottom: 0; padding: 28px var(--pad) 36px; }
@@ -269,5 +280,5 @@ html.has-cursor, html.has-cursor * { cursor: none !important; }
   .list ol { gap: 7px; }
 }
 @media (min-width: 900px) and (max-width: 1199px) {
-  .sheet { grid-template-columns: 1fr .42fr 1fr; }
+  .sheet { grid-template-columns: 1fr .33fr 1fr; }
 }

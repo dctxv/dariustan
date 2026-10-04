@@ -68,7 +68,7 @@ a:focus-visible { outline: 1px solid var(--ink); outline-offset: 3px; }
 .sheet {
   position: relative;
   display: grid;
-  grid-template-columns: 1fr .39fr 1fr;
+  grid-template-columns: 1fr .34fr 1fr;
   grid-template-rows: minmax(100px, 1fr) auto auto minmax(56px, .6fr);
   grid-template-areas:
     "top-l .    top-r"
@@ -145,10 +145,9 @@ a:focus-visible { outline: 1px solid var(--ink); outline-offset: 3px; }
 
 /* ---------- Urchi ---------- */
 
-/* .head is the head's own bounds (1012 x 871.5 mesh units), sitting on the line below.
-   The canvas is larger so a tilt or a turn can reach past the box, onto the paper. */
-.frame { padding: 7% 6% 0; }
-.head { position: relative; aspect-ratio: 1012 / 871.5; }
+/* .head is the head's own bounds (1012 x 871.5 mesh units): the cell itself, so the head
+   touches the lines and gets cut off by them when it tilts or turns, like a print. */
+.head { position: relative; aspect-ratio: 1012 / 871.5; overflow: hidden; }
 .urchi {
   position: absolute;
   z-index: 3;
@@ -157,7 +156,7 @@ a:focus-visible { outline: 1px solid var(--ink); outline-offset: 3px; }
   width: 138.587%;
   height: 141.136%;
   pointer-events: none;
-  /* Printed, not pasted: the white rim takes the paper's colour and the ink sits in it */
+  /* Printed, not pasted: the paper's texture shows through the ink */
   mix-blend-mode: multiply;
 }
 
@@ -263,7 +262,6 @@ html.has-cursor, html.has-cursor * { cursor: none !important; }
     width: 56%;
     max-width: 360px;
     margin: 0 auto;
-    padding: 14% 8% 0;
     border: solid var(--ink);
     border-width: 0 1px;
   }
@@ -280,5 +278,5 @@ html.has-cursor, html.has-cursor * { cursor: none !important; }
   .list ol { gap: 7px; }
 }
 @media (min-width: 900px) and (max-width: 1199px) {
-  .sheet { grid-template-columns: 1fr .33fr 1fr; }
+  .sheet { grid-template-columns: 1fr .29fr 1fr; }
 }

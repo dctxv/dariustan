@@ -191,8 +191,8 @@ const COLOURWAYS: Colourway[] = [
 ];
 /** Drawn (or forced) once per page load and shared by every Urchi on the site's pages from then on. */
 let drawn: Colourway | null = null;
-function colourwayFor(params: URLSearchParams): Colourway {
-  const forced = COLOURWAYS.find((c) => c[0] === params.get("col"));
+function colourwayFor(params: URLSearchParams, pinned?: string): Colourway {
+  const forced = COLOURWAYS.find((c) => c[0] === (params.get("col") || pinned));
   if (forced) return (drawn = forced);
   if (drawn) return drawn;
   let r = Math.random() * COLOURWAYS.reduce((s, c) => s + c[1], 0);
@@ -211,6 +211,8 @@ export function drawnColourway(): { name: string; iris: string; pupilLeft: strin
 
 export type UrchiOptions = {
   reducedMotion?: boolean;
+  /** Always use this colourway (by name, e.g. "og") instead of a random one. ?col= still wins. */
+  colourway?: string;
   /**
    * Mesh units per canvas pixel: 7.5 (the default) paints the 187 x 164 head of the standalone page.
    * A coarser cell paints a smaller canvas whose rim is still exactly one pixel, for a small Urchi
@@ -336,7 +338,7 @@ export function createUrchi(o: UrchiOptions = {}): UrchiCharacter {
   const reduceMotion = STILL || !!o.reducedMotion || matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (STILL) document.documentElement.dataset.still = "";
 
-  const colourway = colourwayFor(params);
+  const colourway = colourwayFor(params, o.colourway);
   const EYE_COLOUR = { iris: colourway[2], pupilLeft: colourway[3], pupilRight: colourway[4] || colourway[3] };
   document.documentElement.dataset.eyes = colourway[0];
 

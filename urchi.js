@@ -1,5 +1,5 @@
 // Draws Urchi's head into the centre cell as a flat halftone print: one dot screen at 45°,
-// a thin solid outline, and paper wherever Urchi is light (the eye whites, the rim).
+// with no outline, and paper wherever Urchi is light (the eye whites, the rim).
 // assets/urchi-head.js is built from urchi-head/ (see README).
 import { createUrchi, URCHI_BOX } from "./assets/urchi-head.js";
 
@@ -8,7 +8,6 @@ const INK = [17, 17, 17];
 const SCREEN = 4.8;      // dot spacing in CSS pixels
 const TONE = 0.6;        // how much ink the dots lay down, 0..1 (around 0.79 the dots start to join)
 const FADE = 0.36;       // how much lighter the top is than the bottom
-const OUTLINE = 1.2;     // solid outline width in CSS pixels
 
 // Smooth value noise on a grid `step` pixels apart, for a little print unevenness.
 function valueNoise(w, h, step) {
@@ -91,23 +90,13 @@ if (head) {
       mask[i] = d[p + 3] / 255 - lum > 0.5 ? 1 : 0;
     }
 
-    // Dots inside, a solid line where the shape meets paper
-    const r = Math.max(1, Math.round(OUTLINE * ratio));
+    // Dots wherever Urchi is ink; the shape is only the edge of the dot field
     const { dot, tone } = field;
-    for (let y = 0, i = 0; y < h; y++) {
-      for (let x = 0; x < w; x++, i++) {
-        const p = i * 4;
-        let ink = false;
-        if (mask[i]) {
-          const edge = x < r || y < r || x >= w - r || y >= h - r ||
-            !mask[i - r] || !mask[i + r] || !mask[i - r * w] || !mask[i + r * w];
-          ink = edge || tone[i] > dot[i];
-        }
-        if (ink) {
-          d[p] = INK[0]; d[p + 1] = INK[1]; d[p + 2] = INK[2]; d[p + 3] = 255;
-        } else {
-          d[p + 3] = 0;
-        }
+    for (let i = 0, p = 0; i < mask.length; i++, p += 4) {
+      if (mask[i] && tone[i] > dot[i]) {
+        d[p] = INK[0]; d[p + 1] = INK[1]; d[p + 2] = INK[2]; d[p + 3] = 255;
+      } else {
+        d[p + 3] = 0;
       }
     }
     ctx.putImageData(img, 0, 0);

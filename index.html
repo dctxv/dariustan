@@ -6,6 +6,36 @@
   <title>Clay Tan / Index</title>
   <meta name="description" content="Darius Clay Tan Yi. Uni student in Melbourne building security simulations, local AI tools and interfaces.">
   <meta name="theme-color" content="#f1efe9">
+  <script>
+    // The sheet is printed where Clay lives: between sunset and sunrise in Melbourne it is the
+    // night print. ?night or ?day forces one. Runs before the stylesheet so there is no flash;
+    // main.js asks again every minute.
+    window.melbourne = function () {
+      var now = new Date(), p = {};
+      try {
+        new Intl.DateTimeFormat("en-AU", { timeZone: "Australia/Melbourne", year: "numeric", month: "numeric",
+          day: "numeric", hour: "numeric", minute: "numeric", hourCycle: "h23" })
+          .formatToParts(now).forEach(function (x) { p[x.type] = +x.value; });
+      } catch (e) {
+        p = { year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate(), hour: now.getHours(), minute: now.getMinutes() };
+      }
+      // NOAA's sunrise and sunset for -37.81, 144.96, in minutes from UTC midnight of Melbourne's date
+      var rad = Math.PI / 180, lat = -37.81 * rad, lon = 144.96, c = Math.cos, s = Math.sin;
+      var day0 = Date.UTC(p.year, p.month - 1, p.day);
+      var g = 2 * Math.PI / 365 * ((day0 - Date.UTC(p.year, 0, 0)) / 864e5 - 1);
+      var eq = 229.18 * (0.000075 + 0.001868 * c(g) - 0.032077 * s(g) - 0.014615 * c(2 * g) - 0.040849 * s(2 * g));
+      var dec = 0.006918 - 0.399912 * c(g) + 0.070257 * s(g) - 0.006758 * c(2 * g) + 0.000907 * s(2 * g)
+        - 0.002697 * c(3 * g) + 0.00148 * s(3 * g);
+      var ha = Math.acos(c(90.833 * rad) / (c(lat) * c(dec)) - Math.tan(lat) * Math.tan(dec)) / rad;
+      var mins = (now - day0) / 6e4;
+      var night = mins < 720 - 4 * (lon + ha) - eq || mins > 720 - 4 * (lon - ha) - eq;
+      if (/[?&]night\b/.test(location.search)) night = true;
+      if (/[?&]day\b/.test(location.search)) night = false;
+      var two = function (n) { return (n < 10 ? "0" : "") + n; };
+      return { night: night, time: two(p.hour % 24) + ":" + two(p.minute) };
+    };
+    document.documentElement.dataset.time = window.melbourne().night ? "night" : "day";
+  </script>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23f1efe9'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%23111' stroke-width='1.5'/%3E%3Cpath d='M16 2v28M2 16h28' stroke='%23111' stroke-width='1.5'/%3E%3C/svg%3E">
   <link rel="preload" href="assets/fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/dm-mono-400.woff2" as="font" type="font/woff2" crossorigin>

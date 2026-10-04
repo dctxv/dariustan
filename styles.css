@@ -26,11 +26,26 @@
   --sans: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
   --pad: clamp(14px, 1.3vw, 22px);
   --draw: 600ms;
+  --grain-blend: multiply;
+  --grain-opacity: .42;
 
   /* Paper texture, all generated SVG noise. No image files. */
   --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1.5 0 0 0 -.6'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
   --tooth: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='360'%3E%3Cfilter id='t'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.045' numOctaves='4' stitchTiles='stitch'/%3E%3CfeDiffuseLighting lighting-color='%23fff' surfaceScale='2.4'%3E%3CfeDistantLight azimuth='225' elevation='58'/%3E%3C/feDiffuseLighting%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23t)'/%3E%3C/svg%3E");
 }
+
+/* The night print: the same sheet with the inks swapped, set from Melbourne's sky (index.html).
+   Multiply vanishes on dark paper, so the grain screens on instead, pressed down so only the
+   tooth's highlights lift. The spot ink stays as it is. */
+:root[data-time="night"] {
+  --paper: #121211;
+  --ink: #f1efe9;
+  --ink-dim: rgba(241, 239, 233, .58);
+  --ink-faint: rgba(241, 239, 233, .3);
+  --grain-blend: screen;
+  --grain-opacity: .22;
+}
+:root[data-time="night"] body::before { filter: brightness(.4) contrast(3); }
 
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
@@ -48,8 +63,8 @@ body::before {
   z-index: 60;
   pointer-events: none;
   background-image: var(--tooth), var(--grain);
-  mix-blend-mode: multiply;
-  opacity: .42;
+  mix-blend-mode: var(--grain-blend);
+  opacity: var(--grain-opacity);
 }
 h1, h2, p, dl, dd, ol, ul, figure { margin: 0; padding: 0; }
 ol, ul { list-style: none; }
@@ -159,9 +174,10 @@ a:focus-visible { outline: 1px solid var(--ink); outline-offset: 3px; }
   width: 138.587%;
   height: 141.136%;
   pointer-events: none;
-  /* Printed, not pasted: the halftone is multiplied onto the paper */
+  /* Printed, not pasted: the halftone is multiplied onto light paper, screened onto dark */
   mix-blend-mode: multiply;
 }
+:root[data-time="night"] .urchi { mix-blend-mode: screen; }
 
 /* ---------- projects and skills: identical structure ---------- */
 

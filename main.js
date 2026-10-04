@@ -4,6 +4,20 @@
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const finePointer = matchMedia("(hover: hover) and (pointer: fine)").matches;
 
+  /* ---------- night or day in Melbourne, asked again every minute ---------- */
+
+  const themeColour = document.querySelector('meta[name="theme-color"]');
+  function checkSky() {
+    const time = window.melbourne().night ? "night" : "day";
+    if (root.dataset.time !== time) {
+      root.dataset.time = time;
+      document.dispatchEvent(new Event("printchange"));
+    }
+    themeColour.content = getComputedStyle(root).getPropertyValue("--paper").trim();
+  }
+  checkSky();
+  setTimeout(() => { checkSky(); setInterval(checkSky, 60000); }, 60000 - (Date.now() % 60000));
+
   /* ---------- tracking box: hover (mouse) or keyboard focus ---------- */
 
   const box = document.createElement("div");

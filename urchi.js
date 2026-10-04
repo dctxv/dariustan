@@ -4,20 +4,25 @@
 import { createUrchi, drawnColourway, URCHI_BOX } from "./assets/urchi-head.js";
 
 const HEAD_W = 1012;     // the head's own width in mesh units, what .head is sized to
-const INK = [17, 17, 17];
 const SCREEN = 4.8;      // dot spacing in CSS pixels
 const TONE = 0.6;        // how much ink the dots lay down, 0..1 (around 0.79 the dots start to join)
 const FADE = 0.36;       // how much lighter the top is than the bottom
 const SPOT_TONE = 0.06;  // how much lighter the spot ink prints than the black
 
 // The iris is the page's one spot colour. It only prints if it reads as colour on the paper:
-// at least this much chroma and no lighter than this (OKLab), picked by eye from all 100 irises.
-// Anything greyer or paler (umbrella, pebble, lilypad...) falls back to one of these.
+// at least this much chroma, and at least this far in lightness from the paper (OKLab), picked
+// by eye from all 100 irises on the day paper. Anything greyer, or too close to the paper (umbrella
+// and lilypad by day), falls back to one of these.
 const MIN_CHROMA = 0.09;
-const MAX_LIGHT = 0.8;
+const MIN_CONTRAST = 0.15;
 const STRONG = ["siren", "lobster", "jukebox", "pool", "valentine"];
 
-const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+const rgb = (hex) => {
+  hex = hex.trim().replace(/^#([0-9a-f])([0-9a-f])([0-9a-f])$/i, "#$1$1$2$2$3$3");
+  return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+};
+// The current print's inks, read from the stylesheet when the sky changes, not per frame
+const inkOf = (name) => rgb(getComputedStyle(document.documentElement).getPropertyValue(name));
 
 function oklab([r, g, b]) {
   const lin = (c) => ((c /= 255) <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
@@ -30,9 +35,9 @@ function oklab([r, g, b]) {
   return { L: 0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s, C: Math.hypot(a, bb) };
 }
 
-function printable(hex) {
+function printable(hex, paper) {
   const { L, C } = oklab(rgb(hex));
-  return C >= MIN_CHROMA && L <= MAX_LIGHT;
+  return C >= MIN_CHROMA && Math.abs(L - oklab(paper).L) >= MIN_CONTRAST;
 }
 
 // Smooth value noise on a grid `step` pixels apart, for a little print unevenness.
@@ -83,9 +88,10 @@ const NEAR = 0.06;       // within this (squared) of a known eye colour counts a
 if (head) {
   // Let the eyes draw at random (?col= still forces one); redraw with a strong one if the
   // iris would print too pale or too grey to see
+  let INK = inkOf("--ink");
   let urchi = createUrchi({ smooth: true });
   let eyes = drawnColourway();
-  if (!printable(eyes.iris)) {
+  if (!printable(eyes.iris, inkOf("--paper"))) {
     urchi.dispose();
     urchi = createUrchi({ smooth: true, colourway: STRONG[(Math.random() * STRONG.length) | 0] });
     eyes = drawnColourway();
@@ -103,6 +109,12 @@ if (head) {
   const ctx = out.getContext("2d", { willReadFrequently: true });
   let field = null, mask = null;
   let dirty = true;
+
+  // Night falls (or the sun comes up) while the page is open: reprint in the new ink
+  document.addEventListener("printchange", () => {
+    INK = inkOf("--ink");
+    dirty = true;
+  });
 
   // Keep the head painted at the size it is shown
   new ResizeObserver(([entry]) => {

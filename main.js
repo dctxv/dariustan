@@ -4,16 +4,54 @@
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const finePointer = matchMedia("(hover: hover) and (pointer: fine)").matches;
 
+  /* ---------- the edition stamp in the footer ---------- */
+
+  const stamp = document.querySelector(".stamp");
+  const stampTime = document.querySelector(".stamp-time");
+  let sky = window.melbourne();
+
+  // Try each wording, longest first, until it fits its cell on one line: the filler goes before the stamp
+  function fit(line, el, variants) {
+    for (const v of variants) {
+      el.textContent = v;
+      if (line.scrollWidth <= line.clientWidth) return;
+    }
+  }
+
+  function renderStamp() {
+    const eyes = (root.dataset.eyes || "").toUpperCase();
+    const no = root.dataset.print, of = root.dataset.prints;
+    if (stamp && no && eyes) {
+      fit(stamp, stamp.firstChild, [`Print ${no} / ${of} · ${eyes}`, `${no} / ${of} · ${eyes}`, eyes]);
+    }
+    if (stampTime) {
+      const t = sky.time, p = sky.night ? "Night" : "Day";
+      fit(stampTime, stampTime, [`Melbourne ${t} · ${p} print · © 2026`, `Melbourne ${t} · ${p} · © 2026`,
+        `Mel ${t} · ${p} · © 2026`, `Mel ${t} · ${p}`]);
+    }
+  }
+  document.addEventListener("edition", renderStamp);
+  addEventListener("resize", renderStamp);
+
+  // The swatch reprints: a fresh draw, so any forced ?col= goes
+  document.querySelector(".swatch")?.addEventListener("click", () => {
+    const url = new URL(location.href);
+    url.searchParams.delete("col");
+    location.assign(url);
+  });
+
   /* ---------- night or day in Melbourne, asked again every minute ---------- */
 
   const themeColour = document.querySelector('meta[name="theme-color"]');
   function checkSky() {
-    const time = window.melbourne().night ? "night" : "day";
+    sky = window.melbourne();
+    const time = sky.night ? "night" : "day";
     if (root.dataset.time !== time) {
       root.dataset.time = time;
       document.dispatchEvent(new Event("printchange"));
     }
     themeColour.content = getComputedStyle(root).getPropertyValue("--paper").trim();
+    renderStamp();
   }
   checkSky();
   setTimeout(() => { checkSky(); setInterval(checkSky, 60000); }, 60000 - (Date.now() % 60000));

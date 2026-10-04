@@ -189,6 +189,8 @@ const COLOURWAYS: Colourway[] = [
   ["sherbet", 0.2, "#E4F4E2", "#4A0A99", "#DB8405"],
   ["neapolitan", 0.2, "#87493B", "#EB76DD", "#B7ABF3"],
 ];
+/** How many colourways there are: an edition's size. */
+export const COLOURWAY_COUNT = COLOURWAYS.length;
 /** Drawn (or forced) once per page load and shared by every Urchi on the site's pages from then on. */
 let drawn: Colourway | null = null;
 function colourwayFor(params: URLSearchParams, pinned?: string): Colourway {
@@ -203,10 +205,13 @@ function colourwayFor(params: URLSearchParams, pinned?: string): Colourway {
   return (drawn = COLOURWAYS[COLOURWAYS.length - 1]);
 }
 
-/** This visit's colourway, as drawn (or forced with ?col=) by the first Urchi on the page; null before any Urchi exists. */
-export function drawnColourway(): { name: string; iris: string; pupilLeft: string; pupilRight: string } | null {
+/**
+ * This visit's colourway, as drawn (or forced with ?col=) by the first Urchi on the page; null before any Urchi exists.
+ * `index` is its 1-based place in the list, out of COLOURWAY_COUNT.
+ */
+export function drawnColourway(): { name: string; index: number; iris: string; pupilLeft: string; pupilRight: string } | null {
   if (!drawn) return null;
-  return { name: drawn[0], iris: drawn[2], pupilLeft: drawn[3], pupilRight: drawn[4] || drawn[3] };
+  return { name: drawn[0], index: COLOURWAYS.indexOf(drawn) + 1, iris: drawn[2], pupilLeft: drawn[3], pupilRight: drawn[4] || drawn[3] };
 }
 
 export type UrchiOptions = {

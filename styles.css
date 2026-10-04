@@ -189,7 +189,21 @@ a:focus-visible { outline: 1px solid var(--ink); outline-offset: 3px; }
 .row-title { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
 .open { flex: none; }
 
-.foot { display: grid; justify-items: center; align-content: center; gap: 2px; text-align: center; }
+.foot { display: grid; align-content: center; gap: 2px; padding-left: 4px; padding-right: 4px; text-align: center; }
+/* A touch tighter than the other labels so the whole stamp fits the narrow centre cell */
+.foot .lbl { font-size: 9px; letter-spacing: .1em; white-space: nowrap; overflow: hidden; }
+/* The swatch is the spot ink itself, and a button: it reprints with a fresh colourway */
+.swatch {
+  display: inline-block;
+  width: 14px; height: 14px;
+  margin: -4px 0 -3px 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  vertical-align: middle;
+  cursor: pointer;
+}
+.swatch::before { content: ""; display: block; width: 6px; height: 6px; margin: auto; background: var(--spot); }
 
 /* ---------- motion: hairlines draw in once ---------- */
 

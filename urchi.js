@@ -1,7 +1,7 @@
 // Draws Urchi's head into the centre cell as a flat two-ink halftone print: black for the head
 // and pupils, a spot colour for the iris, both on one dot screen at 45°, with no outline, and
 // paper wherever Urchi is light (the rim). assets/urchi-head.js is built from urchi-head/ (see README).
-import { createUrchi, drawnColourway, URCHI_BOX } from "./assets/urchi-head.js";
+import { createUrchi, drawnColourway, COLOURWAY_COUNT, URCHI_BOX } from "./assets/urchi-head.js";
 
 const HEAD_W = 1012;     // the head's own width in mesh units, what .head is sized to
 const SCREEN = 4.8;      // dot spacing in CSS pixels
@@ -97,6 +97,10 @@ if (head) {
     eyes = drawnColourway();
   }
   root.style.setProperty("--spot", eyes.iris);
+  // Stamp the edition with the colourway that actually printed, fallback or not
+  root.dataset.print = String(eyes.index).padStart(3, "0");
+  root.dataset.prints = COLOURWAY_COUNT;
+  document.dispatchEvent(new Event("edition"));
   const iris = rgb(eyes.iris), pupils = [rgb(eyes.pupilLeft), rgb(eyes.pupilRight)];
   const src = urchi.canvas;
   const ratio = Math.min(devicePixelRatio, 2);

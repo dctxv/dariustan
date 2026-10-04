@@ -9,6 +9,7 @@ const TONE = 0.6;        // how much ink the dots lay down, 0..1 (around 0.79 th
 const FADE = 0.36;       // how much lighter the top is than the bottom
 const SPOT_TONE = 0.06;  // how much lighter the spot ink prints than the black
 const SHUT = 0.15;       // under this share of the most iris seen, the eyes count as shut
+const DRIFT = 1.5;       // how far the spot plate slips off register toward the pointer, in px
 
 // The iris is the page's one spot colour. It only prints if it reads as colour on the paper:
 // at least this much chroma, and at least this far in lightness from the paper (OKLab), picked
@@ -106,12 +107,18 @@ if (head) {
   const src = urchi.canvas;
   const ratio = Math.min(devicePixelRatio, 2);
 
+  // Two plates, like a two-ink print: black, and the spot over it, from the same mask and screen
   const out = document.createElement("canvas");
-  out.className = "urchi";
+  out.className = "urchi plate-ink";
   out.setAttribute("role", "img");
   out.setAttribute("aria-label", "Urchi, a spiky little mascot");
-  head.append(out);
+  const spot = document.createElement("canvas");
+  spot.className = "urchi plate-spot";
+  spot.setAttribute("aria-hidden", "true");
+  head.append(out, spot);
   const ctx = out.getContext("2d", { willReadFrequently: true });
+  const spotCtx = spot.getContext("2d");
+  let spotImg = null;
   let field = null, mask = null;
   let dirty = true;
   let irisMost = 0, shut = false;
@@ -133,8 +140,9 @@ if (head) {
   function compose() {
     const w = src.width, h = src.height;
     if (out.width !== w || out.height !== h || !field) {
-      out.width = w;
-      out.height = h;
+      out.width = spot.width = w;
+      out.height = spot.height = h;
+      spotImg = spotCtx.createImageData(w, h);
       field = screen(w, h, ratio);
       mask = new Uint8Array(w * h);
       irisMost = 0;
@@ -170,18 +178,45 @@ if (head) {
       else delete root.dataset.blink;
     }
 
-    // Dots on one screen for both inks, so they register; the shape is only the edge of the dots
+    // Dots on one screen for both plates, so they register; the shape is only the edge of the dots
     const { dot, tone } = field;
+    const s = spotImg.data;
     for (let i = 0, p = 0; i < mask.length; i++, p += 4) {
-      const ink = mask[i] === 1 ? INK : mask[i] === 2 ? iris : null;
-      if (ink && tone[i] - (mask[i] === 2 ? SPOT_TONE : 0) > dot[i]) {
-        d[p] = ink[0]; d[p + 1] = ink[1]; d[p + 2] = ink[2]; d[p + 3] = 255;
-      } else {
-        d[p + 3] = 0;
+      d[p + 3] = s[p + 3] = 0;
+      if (mask[i] === 1 && tone[i] > dot[i]) {
+        d[p] = INK[0]; d[p + 1] = INK[1]; d[p + 2] = INK[2]; d[p + 3] = 255;
+      } else if (mask[i] === 2 && tone[i] - SPOT_TONE > dot[i]) {
+        s[p] = iris[0]; s[p + 1] = iris[1]; s[p + 2] = iris[2]; s[p + 3] = 255;
       }
     }
     ctx.putImageData(img, 0, 0);
+    spotCtx.putImageData(spotImg, 0, 0);
     dirty = false;
+  }
+
+  // Hover the print and the spot plate slips off register toward the pointer, a little and a
+  // little late, then settles back. Only ever a translate on that one canvas.
+  const fig = head.closest(".fig");
+  if (matchMedia("(hover: hover) and (pointer: fine)").matches && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    let aim = [0, 0], at = [0, 0], drifting = 0;
+    const drift = () => {
+      at = at.map((v, k) => v + (aim[k] - v) * 0.12);
+      const settled = Math.abs(aim[0] - at[0]) + Math.abs(aim[1] - at[1]) < 0.01;
+      if (settled) at = aim.slice();
+      spot.style.translate = `${at[0].toFixed(2)}px ${at[1].toFixed(2)}px`;
+      drifting = settled ? 0 : requestAnimationFrame(drift);
+    };
+    const aimAt = (x, y) => {
+      aim = [x, y];
+      if (!drifting) drifting = requestAnimationFrame(drift);
+    };
+    fig.addEventListener("pointermove", (e) => {
+      const r = fig.getBoundingClientRect();
+      const dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+      const k = Math.min(1, Math.hypot(dx, dy) / (r.width / 2)) * DRIFT / (Math.hypot(dx, dy) || 1);
+      aimAt(dx * k, dy * k);
+    });
+    fig.addEventListener("pointerleave", () => aimAt(0, 0));
   }
 
   // Animate only while the cell is on screen

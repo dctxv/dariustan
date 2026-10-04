@@ -178,6 +178,12 @@ a:focus-visible { outline: 1px solid var(--ink); outline-offset: 3px; }
   mix-blend-mode: multiply;
 }
 :root[data-time="night"] .urchi { mix-blend-mode: screen; }
+/* The spot plate lands a beat after the black, a hair off register, and is pulled in once */
+@media (prefers-reduced-motion: no-preference) {
+  .plate-spot { animation: plate-in 0s 250ms both, register 400ms cubic-bezier(.65, 0, .25, 1) 250ms both; }
+}
+@keyframes plate-in { from { opacity: 0; } }
+@keyframes register { from { transform: translate(2px, 1px); } }
 
 /* ---------- projects and skills: identical structure ---------- */
 

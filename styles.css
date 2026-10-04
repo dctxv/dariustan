@@ -1,0 +1,282 @@
+/* Clay Tan / Index. One page, one grid. */
+
+/* Self-hosted, latin subset. Geist is variable, one file covers 400 to 600. */
+@font-face {
+  font-family: "Geist";
+  src: url("assets/fonts/geist.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: "DM Mono";
+  src: url("assets/fonts/dm-mono-400.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+
+:root {
+  --paper: #f1efe9;
+  --ink: #111;
+  --ink-dim: rgba(17, 17, 17, .58);
+  --ink-faint: rgba(17, 17, 17, .3);
+  --mono: "DM Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --sans: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --pad: clamp(14px, 1.3vw, 22px);
+  --draw: 600ms;
+
+  /* Paper texture, all generated SVG noise. No image files. */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1.5 0 0 0 -.6'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  --tooth: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='360'%3E%3Cfilter id='t'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.045' numOctaves='4' stitchTiles='stitch'/%3E%3CfeDiffuseLighting lighting-color='%23fff' surfaceScale='2.4'%3E%3CfeDistantLight azimuth='225' elevation='58'/%3E%3C/feDiffuseLighting%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23t)'/%3E%3C/svg%3E");
+  /* Light specks and blotches for the silhouette, so the grain shows through the ink */
+  --speck: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .95 0 0 0 0 .94 0 0 0 0 .91 3.2 0 0 0 -1.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23s)'/%3E%3C/svg%3E");
+  --blot: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420'%3E%3Cfilter id='b'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.028' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .95 0 0 0 0 .94 0 0 0 0 .91 1.25 0 0 0 -.72'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23b)'/%3E%3C/svg%3E");
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 13px/1.45 var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  background-image: var(--tooth), var(--grain);
+  mix-blend-mode: multiply;
+  opacity: .42;
+}
+h1, h2, p, dl, dd, ol, ul, figure { margin: 0; padding: 0; }
+ol, ul { list-style: none; }
+a { color: inherit; text-decoration: none; }
+a:focus-visible { outline: 1px solid var(--ink); outline-offset: 3px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.lbl {
+  font: 400 9.5px/1.5 var(--mono);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+.dim { color: var(--ink-dim); }
+
+/* ---------- the grid ----------
+   Wide | narrow | wide, mirrored around the centre column. Empty paper
+   above and below, the mark in the centre band, one content row. */
+
+.sheet {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr .5fr 1fr;
+  grid-template-rows: minmax(100px, 1fr) auto auto minmax(56px, .6fr);
+  grid-template-areas:
+    "top-l .    top-r"
+    ".     fig  ."
+    "proj  .    skills"
+    ".     foot .";
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: clip;
+}
+
+.cell { position: relative; min-width: 0; padding: var(--pad); }
+.top-l { grid-area: top-l; }
+.top-r { grid-area: top-r; }
+.fig { grid-area: fig; padding: 0; }
+.projects { grid-area: proj; }
+.skills { grid-area: skills; }
+.foot { grid-area: foot; }
+
+.ln { z-index: 2; pointer-events: none; background: var(--ink); }
+.ln-h { grid-column: 1 / -1; height: 1px; align-self: start; transform-origin: left; }
+.ln-v { grid-row: 1 / -1; width: 1px; justify-self: start; transform-origin: top; }
+.v1 { grid-column: 2; }
+.v2 { grid-column: 3; }
+.h1 { grid-row: 2; }
+.h2 { grid-row: 3; }
+.h3 { grid-row: 4; }
+
+.mk { position: relative; z-index: 3; pointer-events: none; align-self: start; }
+/* Circle-plus, half off each page edge on the line above the mark */
+.mk-p {
+  width: 34px; height: 34px;
+  margin-top: -17px;
+  border: 1px solid var(--ink);
+  border-radius: 50%;
+  grid-row: 2;
+}
+.mk-p::before, .mk-p::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  background: var(--ink);
+}
+.mk-p::before { width: 13px; height: 1px; }
+.mk-p::after { width: 1px; height: 13px; }
+.p1 { grid-column: 1; justify-self: start; margin-left: -17px; }
+.p2 { grid-column: 3; justify-self: end; margin-right: -17px; }
+/* Crosshair circles where the line under the mark meets the centre lines */
+.mk-x {
+  width: 26px; height: 26px;
+  margin: -13px 0 0 -12.5px;
+  border: 1px solid var(--ink);
+  border-radius: 50%;
+  grid-row: 3;
+  justify-self: start;
+}
+.x1 { grid-column: 2; }
+.x2 { grid-column: 3; }
+
+/* ---------- type: two sizes ---------- */
+
+.text, .name, .top-r li, .row p { font-size: 13px; line-height: 1.5; }
+.name, .row-title { font-weight: 500; letter-spacing: -.01em; }
+
+/* ---------- top: mirrored blocks hugging the centre lines ---------- */
+
+.top-l, .top-r { align-self: end; display: grid; gap: 6px; padding-bottom: 18px; }
+.top-l { justify-items: end; text-align: right; }
+.top-l .text { max-width: 34ch; }
+.top-r ul { display: grid; gap: 0; }
+.top-r a, .open { background: linear-gradient(currentColor, currentColor) left bottom / 0 1px no-repeat; transition: background-size .2s; }
+.top-r a:hover, .open:hover { background-size: 100% 1px; }
+
+/* ---------- mark ---------- */
+
+.frame { aspect-ratio: 7 / 6; padding: 12px 2px 0; }
+.mark {
+  width: 100%;
+  height: 100%;
+  background-color: var(--ink);
+  background-image: var(--speck), var(--blot);
+  -webkit-mask: url("assets/mark.svg") center bottom / contain no-repeat;
+  mask: url("assets/mark.svg") center bottom / contain no-repeat;
+}
+
+/* ---------- projects and skills: identical structure ---------- */
+
+.list { width: min(100%, 480px); padding-top: 20px; padding-bottom: 20px; display: grid; align-content: start; gap: 14px; }
+.projects { justify-self: end; }
+.skills { justify-self: start; }
+.list ol { display: grid; gap: 10px; }
+.row { display: grid; grid-template-columns: 2.6em 1fr; align-items: baseline; }
+.row-title { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.open { flex: none; }
+
+.foot { display: grid; justify-items: center; align-content: center; gap: 2px; text-align: center; }
+
+/* ---------- motion: hairlines draw in once ---------- */
+
+@media (prefers-reduced-motion: no-preference) {
+  .ln-h { animation: draw-x var(--draw) cubic-bezier(.65, 0, .25, 1) both; }
+  .ln-v { animation: draw-y var(--draw) cubic-bezier(.65, 0, .25, 1) both; }
+  .h2 { animation-delay: 60ms; }
+  .h3 { animation-delay: 120ms; }
+  .mk { animation: fade 240ms ease-out both; animation-delay: calc(var(--draw) - 80ms); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .top-r a, .open { transition: none; }
+}
+@keyframes draw-x { from { transform: scaleX(0); } }
+@keyframes draw-y { from { transform: scaleY(0); } }
+@keyframes fade { from { opacity: 0; } }
+
+/* ---------- custom cursor + tracking box (built in main.js) ---------- */
+
+html.has-cursor, html.has-cursor * { cursor: none !important; }
+
+.cur { position: fixed; inset: 0; z-index: 90; pointer-events: none; opacity: 0; }
+.cur.on { opacity: 1; }
+.cur-h, .cur-v { position: absolute; left: 0; top: 0; background: var(--ink-faint); }
+.cur-h { width: 100%; height: 1px; }
+.cur-v { width: 1px; height: 100%; }
+.cur-h.lock, .cur-v.lock { background: var(--ink); }
+.cur-ring {
+  position: absolute;
+  left: -6px; top: -6px;
+  width: 13px; height: 13px;
+  border: 1px solid var(--ink);
+  border-radius: 50%;
+}
+.cur-lbl {
+  position: absolute;
+  left: 12px; top: 12px;
+  font: 400 8.5px/1 var(--mono);
+  letter-spacing: .12em;
+  white-space: nowrap;
+  color: var(--ink);
+}
+
+.track {
+  position: fixed;
+  left: 0; top: 0;
+  z-index: 80;
+  pointer-events: none;
+  border: 1px solid var(--ink-faint);
+  opacity: 0;
+}
+.track.on { opacity: 1; }
+.track i { position: absolute; width: 7px; height: 7px; border: 0 solid var(--ink); }
+.track i:nth-of-type(1) { left: -1px; top: -1px; border-width: 1.5px 0 0 1.5px; }
+.track i:nth-of-type(2) { right: -1px; top: -1px; border-width: 1.5px 1.5px 0 0; }
+.track i:nth-of-type(3) { left: -1px; bottom: -1px; border-width: 0 0 1.5px 1.5px; }
+.track i:nth-of-type(4) { right: -1px; bottom: -1px; border-width: 0 1.5px 1.5px 0; }
+.track-lbl {
+  position: absolute;
+  left: -1px; bottom: 100%;
+  margin-bottom: 3px;
+  padding: 2px 4px 1px;
+  font: 400 8.5px/1.2 var(--mono);
+  letter-spacing: .12em;
+  white-space: nowrap;
+  background: var(--ink);
+  color: var(--paper);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .track { transition: transform 170ms cubic-bezier(.3, .7, .2, 1), width 170ms cubic-bezier(.3, .7, .2, 1), height 170ms cubic-bezier(.3, .7, .2, 1), opacity 120ms; }
+  .track.jump { transition: opacity 120ms; }
+}
+
+/* ---------- small screens: one column ---------- */
+
+@media (max-width: 899px) {
+  .sheet {
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
+    grid-template-areas: "top-l" "top-r" "fig" "proj" "skills" "foot";
+    min-height: 0;
+  }
+  .ln, .mk { display: none; }
+  .cell { border-bottom: 1px solid var(--ink); }
+  .top-l { padding-top: 48px; justify-items: start; text-align: left; }
+  .top-r { padding-top: 18px; }
+  /* The centre column survives as a framed strip around the mark */
+  .frame {
+    width: 56%;
+    max-width: 360px;
+    margin: 0 auto;
+    padding: 28px 4px 0;
+    border: solid var(--ink);
+    border-width: 0 1px;
+    aspect-ratio: 7 / 6.5;
+  }
+  .list { width: auto; justify-self: stretch; padding-top: 24px; padding-bottom: 28px; }
+  .foot { border-bottom: 0; padding: 28px var(--pad) 36px; }
+}
+
+/* ---------- short desktop screens: tighter rhythm, same layout ---------- */
+
+@media (min-width: 900px) and (max-height: 800px) {
+  .sheet { grid-template-rows: minmax(84px, 1fr) auto auto minmax(48px, .6fr); }
+  .top-l, .top-r { padding-bottom: 14px; }
+  .list { padding-top: 14px; padding-bottom: 14px; gap: 10px; }
+  .list ol { gap: 7px; }
+}
+@media (min-width: 900px) and (max-width: 1199px) {
+  .sheet { grid-template-columns: 1fr .42fr 1fr; }
+}

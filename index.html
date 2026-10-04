@@ -14,6 +14,30 @@
   <script src="urchi.js" type="module"></script>
 </head>
 <body>
+  <!-- Worn ink for Urchi: ink or paper only, chewed edges, streaky wear that follows the fibres -->
+  <svg class="defs" width="0" height="0" aria-hidden="true" focusable="false">
+    <filter id="ink" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">
+      <!-- dark becomes solid ink; light (eye whites, rim) and transparent become paper -->
+      <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 .067  0 0 0 0 .067  0 0 0 0 .067  -.299 -.587 -.114 1 0" result="tone"/>
+      <feComponentTransfer in="tone" result="solid"><feFuncA type="discrete" tableValues="0 1"/></feComponentTransfer>
+      <!-- chewed edges -->
+      <feTurbulence type="fractalNoise" baseFrequency=".04" numOctaves="2" seed="3" result="warp"/>
+      <feDisplacementMap in="solid" in2="warp" scale="3" xChannelSelector="R" yChannelSelector="G" result="rough"/>
+      <!-- heavier wear along the outline -->
+      <feMorphology in="rough" operator="erode" radius="2" result="core"/>
+      <feTurbulence type="fractalNoise" baseFrequency=".3" numOctaves="2" seed="7" result="fine"/>
+      <feColorMatrix in="fine" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -7 4.7" result="nibble"/>
+      <feComposite in="rough" in2="nibble" operator="in" result="frayed"/>
+      <feMerge result="chewed"><feMergeNode in="frayed"/><feMergeNode in="core"/></feMerge>
+      <!-- streaky wear, mostly solid: raise 6.5 for more solid ink, lower it for more worn -->
+      <feTurbulence type="fractalNoise" baseFrequency=".02 .25" numOctaves="3" seed="11" result="wear"/>
+      <feColorMatrix in="wear" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -9 6.5" result="mask"/>
+      <feComposite in="chewed" in2="mask" operator="in" result="worn"/>
+      <!-- back to hard-edged ink, no soft alpha -->
+      <feComponentTransfer in="worn"><feFuncA type="discrete" tableValues="0 1"/></feComponentTransfer>
+    </filter>
+  </svg>
+
   <main class="sheet">
 
     <!-- Hairlines and markers, mirrored around the centre column -->

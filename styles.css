@@ -156,9 +156,11 @@ a:focus-visible { outline: 1px solid var(--ink); outline-offset: 3px; }
   width: 138.587%;
   height: 141.136%;
   pointer-events: none;
-  /* Printed, not pasted: the paper's texture shows through the ink */
+  /* Printed, not pasted: worn into ink by the #ink filter, then multiplied onto the paper */
+  filter: url(#ink);
   mix-blend-mode: multiply;
 }
+.defs { position: absolute; width: 0; height: 0; overflow: hidden; }
 
 /* ---------- projects and skills: identical structure ---------- */
 
@@ -212,6 +214,8 @@ html.has-cursor, html.has-cursor * { cursor: none !important; }
   letter-spacing: .12em;
   white-space: nowrap;
   color: var(--ink);
+  padding: 3px 4px 2px;
+  background: var(--paper);
 }
 
 .track {

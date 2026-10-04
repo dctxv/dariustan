@@ -104,6 +104,21 @@ if (head) {
   root.dataset.prints = COLOURWAY_COUNT;
   document.dispatchEvent(new Event("edition"));
   const iris = rgb(eyes.iris), pupils = [rgb(eyes.pupilLeft), rgb(eyes.pupilRight)];
+
+  // Which ink a painted pixel prints in: 0 paper, 1 black, 2 spot. The iris (coloured, not near
+  // black or white) is spot; the pupils stay black whatever colour they are drawn; otherwise dark
+  // and opaque is black and light parts (the rim) are paper.
+  function inkAt(d, p) {
+    const lum = (0.299 * d[p] + 0.587 * d[p + 1] + 0.114 * d[p + 2]) / 255;
+    if (d[p + 3] > 127) {
+      const toIris = dist(d, p, iris);
+      const toPupil = Math.min(dist(d, p, pupils[0]), dist(d, p, pupils[1]));
+      const chroma = (Math.max(d[p], d[p + 1], d[p + 2]) - Math.min(d[p], d[p + 1], d[p + 2])) / 255;
+      if (toIris < NEAR && toIris < toPupil && chroma > 0.15 && lum > 0.08 && lum < 0.94) return 2;
+      if (toPupil < NEAR && toPupil <= toIris) return 1;
+    }
+    return d[p + 3] / 255 - lum > 0.5 ? 1 : 0;
+  }
   const src = urchi.canvas;
   const ratio = Math.min(devicePixelRatio, 2);
 
@@ -124,10 +139,59 @@ if (head) {
   let dirty = true;
   let irisMost = 0, shut = false;
 
+  // Urchi in the tab: a second head on this visit's colourway that never follows the pointer,
+  // printed flat in the current inks (a halftone will not read at 16px). It blinks with the page
+  // and turns over with the night, at most once per 300ms and never while the tab is hidden.
+  // One update() per redraw, nothing in the animation loop.
+  const favicon = (() => {
+    const link = document.querySelector('link[rel="icon"]');
+    if (!link) return { redraw() {} };
+    const mini = createUrchi({ input: false, smooth: true, colourway: eyes.name });
+    mini.dispose();
+    const S = 64, HEAD = 54;
+    const c = document.createElement("canvas");
+    c.width = c.height = S;
+    const g = c.getContext("2d", { willReadFrequently: true });
+    mini.setResolution(Math.round(HEAD * URCHI_BOX.w / HEAD_W));
+    let last = -1e9, timer = 0, pending = false;
+
+    function draw() {
+      last = performance.now();
+      pending = false;
+      mini.update(1 / 60);
+      // Where the head sits on the painted canvas (the same insets as .urchi in styles.css)
+      const m = mini.canvas, hw = m.width / 1.38587, hh = m.height / 1.41136;
+      g.clearRect(0, 0, S, S);
+      g.drawImage(m, (S - hw) / 2 - hw * 0.19293, (S - hh) / 2 - hh * 0.27309);
+      const img = g.getImageData(0, 0, S, S), d = img.data;
+      const paper = inkOf("--paper"), ink = inkOf("--ink");
+      for (let p = 0; p < d.length; p += 4) {
+        let k = inkAt(d, p);
+        if (k === 2 && shut) k = 1;
+        const col = k === 1 ? ink : k === 2 ? iris : paper;
+        d[p] = col[0]; d[p + 1] = col[1]; d[p + 2] = col[2]; d[p + 3] = 255;
+      }
+      g.putImageData(img, 0, 0);
+      link.type = "image/png";
+      link.href = c.toDataURL("image/png");
+    }
+
+    function redraw() {
+      if (document.hidden) { pending = true; return; }
+      const wait = 300 - (performance.now() - last);
+      if (wait <= 0) draw();
+      else if (!timer) timer = setTimeout(() => { timer = 0; redraw(); }, wait);
+    }
+    document.addEventListener("visibilitychange", () => { if (!document.hidden && pending) redraw(); });
+    return { redraw };
+  })();
+  favicon.redraw();
+
   // Night falls (or the sun comes up) while the page is open: reprint in the new ink
   document.addEventListener("printchange", () => {
     INK = inkOf("--ink");
     dirty = true;
+    favicon.redraw();
   });
 
   // Keep the head painted at the size it is shown
@@ -153,20 +217,10 @@ if (head) {
     const img = ctx.getImageData(0, 0, w, h);
     const d = img.data;
 
-    // Three inks: 0 paper, 1 black, 2 spot. The iris (coloured, not near black or white)
-    // is spot; the pupils stay black whatever colour they are drawn; otherwise dark and
-    // opaque is black and light parts (the rim) are paper.
     let irisNow = 0;
     for (let i = 0, p = 0; i < mask.length; i++, p += 4) {
-      const lum = (0.299 * d[p] + 0.587 * d[p + 1] + 0.114 * d[p + 2]) / 255;
-      let ink = d[p + 3] / 255 - lum > 0.5 ? 1 : 0;
-      if (d[p + 3] > 127) {
-        const toIris = dist(d, p, iris);
-        const toPupil = Math.min(dist(d, p, pupils[0]), dist(d, p, pupils[1]));
-        const chroma = (Math.max(d[p], d[p + 1], d[p + 2]) - Math.min(d[p], d[p + 1], d[p + 2])) / 255;
-        if (toIris < NEAR && toIris < toPupil && chroma > 0.15 && lum > 0.08 && lum < 0.94) { ink = 2; irisNow++; }
-        else if (toPupil < NEAR && toPupil <= toIris) ink = 1;
-      }
+      const ink = inkAt(d, p);
+      if (ink === 2) irisNow++;
       mask[i] = ink;
     }
 
@@ -177,6 +231,7 @@ if (head) {
       shut = !shut;
       if (shut) root.dataset.blink = "";
       else delete root.dataset.blink;
+      favicon.redraw();
     }
 
     // Dots on one screen for both plates, so they register; the shape is only the edge of the dots

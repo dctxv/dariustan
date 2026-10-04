@@ -43,7 +43,7 @@
   --ink-dim: rgba(241, 239, 233, .58);
   --ink-faint: rgba(241, 239, 233, .3);
   --grain-blend: screen;
-  --grain-opacity: .17;
+  --grain-opacity: .13;
 }
 :root[data-time="night"] body::before { filter: brightness(.4) contrast(3); }
 

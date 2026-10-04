@@ -112,6 +112,7 @@ if (head) {
   out.className = "urchi plate-ink";
   out.setAttribute("role", "img");
   out.setAttribute("aria-label", "Urchi, a spiky little mascot");
+  out.tabIndex = 0;
   const spot = document.createElement("canvas");
   spot.className = "urchi plate-spot";
   spot.setAttribute("aria-hidden", "true");
@@ -191,12 +192,132 @@ if (head) {
     }
     ctx.putImageData(img, 0, 0);
     spotCtx.putImageData(spotImg, 0, 0);
+    if (specimen.on) specimen.place(anchors(w, h, !shut));
     dirty = false;
   }
 
+  // Points on the print to annotate, in canvas pixels, read off the mask: the two irises (either
+  // side of the iris's median x), the ear tips (topmost ink in each half of the head) and a point
+  // on the lower cheek (leftmost ink at 70% of the head's height). Irises keep their last place
+  // while the eyes are shut.
+  let lastIris = { left: null, right: null };
+  function anchors(w, h, eyesOpen) {
+    const colN = new Uint32Array(w), colY = new Float64Array(w);
+    let x0 = w, x1 = -1, y0 = h, y1 = -1, spots = 0;
+    for (let y = 0, i = 0; y < h; y++) {
+      for (let x = 0; x < w; x++, i++) {
+        const m = mask[i];
+        if (m === 2) { colN[x]++; colY[x] += y; spots++; }
+        else if (m === 1) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+      }
+    }
+    if (x1 < 0) return {};
+    if (eyesOpen && spots) {
+      let seen = 0, median = 0;
+      while (seen < spots / 2) seen += colN[median++];
+      const centroid = (a, b) => {
+        let n = 0, sx = 0, sy = 0;
+        for (let x = a; x < b; x++) { n += colN[x]; sx += colN[x] * x; sy += colY[x]; }
+        return n ? [sx / n, sy / n] : null;
+      };
+      lastIris = { left: centroid(0, median), right: centroid(median, w) };
+    }
+    const mid = (x0 + x1) / 2, tips = [null, null];
+    for (let y = y0, i = y0 * w; y <= y1 && !(tips[0] && tips[1]); y++) {
+      for (let x = 0; x < w; x++, i++) {
+        if (mask[i] !== 1) continue;
+        const side = x < mid ? 0 : 1;
+        if (!tips[side]) tips[side] = [x, y];
+      }
+    }
+    const cy = Math.round(y0 + (y1 - y0) * 0.7);
+    let cheek = null;
+    for (let x = 0, i = cy * w; x < w; x++, i++) if (mask[i] === 1) { cheek = [x, cy]; break; }
+    return { irisL: lastIris.left, irisR: lastIris.right, earL: tips[0], earR: tips[1], cheek };
+  }
+
+  // The specimen plate: hover the print (or focus it) and the page annotates its own print, in the
+  // empty paper either side of the centre cell. Desktop with a fine pointer only.
+  const sheet = document.querySelector(".sheet");
+  const specimen = (() => {
+    const svgNS = "http://www.w3.org/2000/svg";
+    const layer = document.createElement("div");
+    layer.className = "specimen";
+    layer.setAttribute("aria-hidden", "true");
+    const svg = document.createElementNS(svgNS, "svg");
+    layer.append(svg);
+    sheet.append(layer);
+    // Which anchor each label hangs from, and which side of the head it sits on
+    const LABELS = [
+      { key: "irisL", side: -1, text: () => `Iris / ${(root.dataset.eyes || "").toUpperCase()} / ${eyes.iris.toUpperCase()}` },
+      { key: "cheek", side: -1, text: () => "Plate 01 / Ink" },
+      { key: "irisR", side: 1, text: () => "Plate 02 / Spot" },
+      { key: "earR", side: 1, text: () => `Screen 45° / ${SCREEN}px` },
+    ];
+    const DOTS = ["irisL", "irisR", "earL", "earR", "cheek"];
+    for (const l of LABELS) {
+      l.el = document.createElement("span");
+      l.el.className = "lbl spec-lbl";
+      layer.append(l.el);
+    }
+    const GAP = 16, STEP = 18;
+
+    function place(at) {
+      const s = sheet.getBoundingClientRect(), c = out.getBoundingClientRect(), box = head.getBoundingClientRect();
+      const toSheet = ([x, y]) => [c.left - s.left + (x / out.width) * c.width, c.top - s.top + (y / out.height) * c.height];
+      const inBox = ([x, y]) => x >= box.left - s.left && x <= box.right - s.left && y >= box.top - s.top && y <= box.bottom - s.top;
+      const pts = {};
+      for (const k of DOTS) if (at[k]) { const p = toSheet(at[k]); if (inBox(p)) pts[k] = p; }
+      const top = box.top - s.top + 6, bottom = box.bottom - s.top - 6;
+      const avoid = [...document.querySelectorAll(".top-l, .top-r, .projects, .skills, .foot")].map((el) => el.getBoundingClientRect());
+      let marks = "";
+      for (const side of [-1, 1]) {
+        let floor = top;
+        for (const l of LABELS.filter((l) => l.side === side).sort((a, b) => (pts[a.key]?.[1] ?? 0) - (pts[b.key]?.[1] ?? 0))) {
+          const p = pts[l.key];
+          l.el.textContent = l.text();
+          const lw = l.el.offsetWidth, lh = l.el.offsetHeight;
+          const y = p ? Math.max(floor, p[1] - lh / 2) : 0;
+          const x = side < 0 ? box.left - s.left - GAP - lw : box.right - s.left + GAP;
+          const r = { left: s.left + x, right: s.left + x + lw, top: s.top + y, bottom: s.top + y + lh };
+          const hits = avoid.some((a) => r.left < a.right && r.right > a.left && r.top < a.bottom && r.bottom > a.top);
+          if (!p || y + lh > bottom || x < 0 || hits) { l.el.hidden = true; continue; }
+          l.el.hidden = false;
+          l.el.style.transform = `translate(${x}px, ${y}px)`;
+          floor = y + STEP;
+          const end = side < 0 ? x + lw + 6 : x - 6;
+          marks += `<line x1="${p[0]}" y1="${p[1]}" x2="${end}" y2="${y + lh / 2}"/>`;
+        }
+      }
+      for (const k in pts) marks += `<circle cx="${pts[k][0]}" cy="${pts[k][1]}" r="1.5"/>`;
+      svg.innerHTML = marks;
+    }
+
+    const able = () => matchMedia("(hover: hover) and (pointer: fine)").matches && innerWidth >= 900;
+    const api = {
+      on: false,
+      place,
+      show() {
+        if (!able()) return;
+        api.on = true;
+        dirty = true;
+        layer.classList.add("on");
+      },
+      hide() {
+        api.on = false;
+        layer.classList.remove("on");
+      },
+    };
+    return api;
+  })();
+  const fig = head.closest(".fig");
+  fig.addEventListener("pointerover", (e) => { if (e.pointerType !== "touch") specimen.show(); });
+  fig.addEventListener("pointerleave", () => { if (document.activeElement !== out) specimen.hide(); });
+  out.addEventListener("focus", () => specimen.show());
+  out.addEventListener("blur", () => specimen.hide());
+
   // Hover the print and the spot plate slips off register toward the pointer, a little and a
   // little late, then settles back. Only ever a translate on that one canvas.
-  const fig = head.closest(".fig");
   if (matchMedia("(hover: hover) and (pointer: fine)").matches && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
     let aim = [0, 0], at = [0, 0], drifting = 0;
     const drift = () => {

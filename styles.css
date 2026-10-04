@@ -183,6 +183,17 @@ a:focus-visible { outline: 1px solid var(--ink); outline-offset: 3px; }
   .plate-spot { animation: plate-in 0s 250ms both, register 400ms cubic-bezier(.65, 0, .25, 1) 250ms both; }
 }
 @keyframes plate-in { from { opacity: 0; } }
+.plate-ink:focus-visible { outline: none; }   /* the tracking box marks it instead */
+
+/* The specimen plate: leaders, dots and labels annotating the print (urchi.js) */
+.specimen { position: absolute; inset: 0; z-index: 4; pointer-events: none; opacity: 0; transition: opacity 200ms; }
+.specimen.on { opacity: 1; }
+.specimen svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.specimen line { stroke: var(--ink-faint); stroke-width: 1; }
+.specimen circle { fill: var(--ink); }
+.spec-lbl { position: absolute; left: 0; top: 0; white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .specimen { transition: none; } }
+@media (max-width: 899px) { .specimen { display: none; } }
 @keyframes register { from { transform: translate(2px, 1px); } }
 
 /* ---------- projects and skills: identical structure ---------- */
